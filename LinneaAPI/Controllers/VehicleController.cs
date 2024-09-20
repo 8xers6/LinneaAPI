@@ -1,7 +1,7 @@
-﻿using LinneaAPI.Models;
+﻿using LinneaAPI.Data;
+using LinneaAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using LinneaAPI.Data;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -17,54 +17,36 @@ public class VehicleController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<IEnumerable<Location>>> GetVehicleLocations(string id)
     {
-        try
+        var locations = await _context.Locations
+            .Where(l => l.VehicleId == id)
+            .ToListAsync();
+
+        if (locations == null)
         {
-            var vehicle = await _context.Vehicles
-                                        .AsNoTracking()
-                                        .Include(v => v.Locations)
-                                        .FirstOrDefaultAsync(v => v.VehicleId == id);
-
-            if (vehicle == null)
-            {
-                return NotFound();
-            }
-
-
-            return Ok(vehicle.Locations);
+            return NotFound();
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, "Internal server error");
-        }
+
+        return locations;
     }
 
-
-
     [HttpPost("location")]
-    public async Task<IActionResult> PostLocation([FromBody] Location data)
+    public async Task<IActionResult> PostLocation([FromBody] string locationData)
     {
-        if (data == null)
+        var data = locationData.Split(',');
+        if (data.Length != 3)
         {
-            return BadRequest("Data cannot be null.");
+            return BadRequest("Invalid data format.");
         }
 
         var location = new Location
         {
-            VehicleId = data.VehicleId,
-            Latitude = data.Latitude,
-            Longitude = data.Longitude,
-            Timestamp = DateTime.UtcNow
+            VehicleId = data[0],
+            Latitude = float.Parse(data[1]),
+            Longitude = float.Parse(data[2])
         };
 
-        try
-        {
-            _context.Locations.Add(location);
-            await _context.SaveChangesAsync();
-        }
-        catch (Exception ex) { 
-
-            return StatusCode(500, "Internal server error");
-        }
+        _context.Locations.Add(location);
+        await _context.SaveChangesAsync();
 
         return NoContent();
     }
