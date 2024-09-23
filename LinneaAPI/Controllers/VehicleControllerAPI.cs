@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("api/[controller]")]
-public class VehicleController : ControllerBase
+public class VehicleControllerAPI : ControllerBase
 {
     private readonly ApplicationDbContext _context;
 
